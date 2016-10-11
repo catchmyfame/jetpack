@@ -73,17 +73,23 @@ class WP_Test_Jetpack_REST_API_endpoints extends WP_UnitTestCase {
 	 *
 	 * @since 4.4.0
 	 *
-	 * @param string $route  REST API path to be append to /jetpack/v4/
-	 * @param array  $params When present, parameters are added to request in JSON format
-	 * @param string $method Request method to use, GET or POST
+	 * @param string $route       REST API path to be append to /jetpack/v4/
+	 * @param array  $json_params When present, parameters are added to request in JSON format
+	 * @param string $method      Request method to use, GET or POST
+	 * @param array  $params      Parameters to add to endpoint
 	 *
 	 * @return WP_REST_Request
 	 */
-	protected function create_and_get_request( $route = '', $params = array(), $method = 'GET' ) {
+	protected function create_and_get_request( $route = '', $json_params = array(), $method = 'GET', $params = array() ) {
 		$request = new WP_REST_Request( $method, "/jetpack/v4/$route" );
 		$request->set_header( 'content-type', 'application/json' );
-		if ( ! empty( $params ) ) {
-			$request->set_body( json_encode( $params ) );
+		if ( ! empty( $json_params ) ) {
+			$request->set_body( json_encode( $json_params ) );
+		}
+		if ( ! empty( $params ) && is_array( $params ) ) {
+			foreach ( $params as $key => $value ) {
+				$request->set_param( $key, $value );
+			}
 		}
 		return $this->server->dispatch( $request );
 	}
@@ -284,9 +290,6 @@ class WP_Test_Jetpack_REST_API_endpoints extends WP_UnitTestCase {
 		// Create a user
 		$user = $this->create_and_get_user();
 
-		// Add Jetpack capability
-		$user->add_cap( 'jetpack_connect_user' );
-
 		// Setup global variables so this is the current user
 		wp_set_current_user( $user->ID );
 
@@ -295,6 +298,14 @@ class WP_Test_Jetpack_REST_API_endpoints extends WP_UnitTestCase {
 
 		// Mock that it's connected
 		Jetpack_Options::update_option( 'user_tokens', array( $user->ID => "honey.badger.$user->ID" ) );
+
+		// User is connected but doesn't have the capability. This should still fail
+		$this->assertInstanceOf( 'WP_Error', Jetpack_Core_Json_Api_Endpoints::unlink_user_permission_callback() );
+
+		$user->set_role( 'administrator' );
+		$user->add_cap( 'jetpack_connect' );
+		wp_set_current_user( 0 );
+		wp_set_current_user( $user->ID );
 
 		// User has the capability and is connected so this should work this time
 		$this->assertTrue( Jetpack_Core_Json_Api_Endpoints::unlink_user_permission_callback() );
@@ -583,4 +594,46 @@ class WP_Test_Jetpack_REST_API_endpoints extends WP_UnitTestCase {
 		);
 	}
 
+	/**
+	 * Test unlink user.
+	 *
+	 * @since 4.4.0
+	 */
+	public function test_unlink_user() {
+
+		// Create a user and set it up as current.
+		$user = $this->create_and_get_user();
+		$user->add_cap( 'jetpack_connect_user' );
+		wp_set_current_user( $user->ID );
+
+		// Mock site already registered
+		Jetpack_Options::update_option( 'user_tokens', array( $user->ID => "honey.badger.$user->ID" ) );
+
+		// Create REST request in JSON format and dispatch
+		$response = $this->create_and_get_request( 'connection/user', array( 'linked' => false ), 'POST' );
+
+		// Success status, users can unlink themselves
+		$this->assertResponseStatus( 200, $response );
+
+		// Set up user as master user
+		Jetpack_Options::update_option( 'master_user', $user->ID );
+
+		// Create REST request in JSON format and dispatch
+		$response = $this->create_and_get_request( 'connection/user', array( 'linked' => false ), 'POST' );
+
+		// User can't unlink because doesn't have permission
+		$this->assertResponseStatus( 403, $response );
+
+		// Add proper permission
+		$user->set_role( 'administrator' );
+		wp_set_current_user( 0 );
+		wp_set_current_user( $user->ID );
+
+		// Create REST request in JSON format and dispatch
+		$response = $this->create_and_get_request( 'connection/user', array( 'linked' => false ), 'POST' );
+
+		// No way. Master user can't be unlinked. This is intended
+		$this->assertResponseStatus( 403, $response );
+
+	}
 } // class end
