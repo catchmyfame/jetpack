@@ -1,3 +1,4 @@
+<?php
 /**
  * Module Name: WordAds
  * Module Description: Harness WordPress.com's advertising partners for your own website.
