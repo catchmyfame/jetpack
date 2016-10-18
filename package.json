@@ -21,7 +21,7 @@
     "build-production": "npm run clean && npm run build && npm run build-languages && gulp languages:extract && NODE_ENV=production npm run build",
     "build-languages": "gulp languages",
     "test-client": "NODE_ENV=test NODE_PATH=tests:_inc/client:node_modules/@automattic/dops-components/client tests/runner.js",
-    "test-gui":    "NODE_ENV=test NODE_PATH=tests:_inc/client:node_modules/@automattic/dops-components/client tests/runner.js gui",
+    "test-gui": "NODE_ENV=test NODE_PATH=tests:_inc/client:node_modules/@automattic/dops-components/client tests/runner.js gui",
     "lint": "eslint _inc/client -c .eslintrc"
   },
   "dependencies": {
@@ -100,6 +100,7 @@
     "chai": "^3.5.0",
     "commander": "2.3.0",
     "enzyme": "^2.4.1",
+    "glob": "^7.1.1",
     "mocha": "^2.4.5",
     "mockery": "^1.4.1",
     "nock": "^7.2.2",
