@@ -47,15 +47,15 @@ All endpoints return and accept JSON. Make sure you add the proper `content-type
 
 Operations related to Jetpack's connection to WordPress.com
 
-#### GET /wp-json/jetpack/v4/connection-status
+#### GET /wp-json/jetpack/v4/connection
 
 Fetch Jetpack's current connection status.
 
-#### GET /wp-json/jetpack/v4/connect-url
+#### GET /wp-json/jetpack/v4/connection/url
 
 Fetch a fresh WordPress.com URL for connecting the Jetpack installation.
 
-#### GET /wp-json/jetpack/v4/user-connection-data
+#### GET /wp-json/jetpack/v4/connection/data
 
 Fetch the data of the current's user WordPress.com account.
 
